@@ -1,5 +1,7 @@
 # openrouter-calc
 
+## What is this?
+
 This is a simple price calculator for the language models provided by OpenRouter.
 
 It fetches the latest language model list along with pricing details and more, and allows you to specify your expected number of input tokens, output tokens, and the number of API calls made.
@@ -15,3 +17,7 @@ You can sort the lists by price and include or exclude their completely free mod
 It's all in a single page suitable for static hosting and the OpenRouter API call to fetch the latest model list does not require an API key.
 
 Have fun! 🥳
+
+## Demo
+
+https://openrouter-calc.netlify.app
