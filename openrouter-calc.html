@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenRouter Price Calculator</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
+    <!-- BootstrapVue CSS -->
+    <link type="text/css" rel="stylesheet" href="https://unpkg.com/bootstrap-vue@2.23.1/dist/bootstrap-vue.min.css" />
+
+    <style>
+    .nowrap {
+        white-space: nowrap;
+    }
+    .loading-spinner {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 200px;
+    }
+    .openrouter-id {
+        font-family: monospace;
+        font-size: small;
+    }
+    </style>
+</head>
+<body>
+
+<b-container id="app" fluid class="mt-3">
+    <h2>OpenRouter Price Calculator</h2>
+
+    <b-card class="m-3" header="Settings" bg-variant="light">
+        <b-form inline>
+            <b-form-group label="Input Tokens:" label-for="input-tokens">
+                <b-form-input class="mx-2" id="input-tokens" v-model.number="inputTokens" type="number" min="0"></b-form-input>
+            </b-form-group>
+            <b-form-group label="Output Tokens:" label-for="output-tokens">
+                <b-form-input class="mx-2" id="output-tokens" v-model.number="outputTokens" type="number" min="0"></b-form-input>
+            </b-form-group>
+            <b-form-group label="API Call Count:" label-for="api-calls">
+                 <b-form-input class="mx-2" id="api-calls" v-model.number="apiCalls" type="number" min="1" ></b-form-input>
+            </b-form-group>
+            <b-form-checkbox id="includeFreeModels" name="includeFreeModels" v-model="includeFreeModels">
+                Include Free Models
+            </b-form-checkbox>
+        </b-form>
+    </b-card>
+
+    <div v-if="isLoading" class="loading-spinner">
+        <b-spinner label="Loading models..."></b-spinner>
+        <span class="ml-2">Loading models from OpenRouter...</span>
+    </div>
+
+    <b-alert v-if="error" variant="danger" show>{{ error }}</b-alert>
+
+    <div v-if="!isLoading && !error">
+        <h3>Language Model Prices</h3>
+        <b-table small striped hover bordered responsive
+            :items="calculatedModels" :fields="fields"
+            :sort-by.sync="sortBy" :sort-desc.sync="sortDesc"
+            primary-key="id">
+             <template #cell(name)="data">
+                <span class="nowrap">{{ data.value }}</span>
+            </template>
+             <template #cell(id)="data">
+                <span class="openrouter-id">{{ data.value }}</span>
+            </template>
+             <template #cell(inputCost)="data">
+                <span class="nowrap">{{ formatCurrency(data.value) }}</span>
+            </template>
+            <template #cell(outputCost)="data">
+                 <span class="nowrap">{{ formatCurrency(data.value) }}</span>
+            </template>
+            <template #cell(totalCost)="data">
+                 <span class="nowrap">{{ formatCurrency(data.value) }}</span>
+            </template>
+        </b-table>
+    </div>
+
+</b-container>
+
+<!-- Vue.js -->
+<script src="https://cdn.jsdelivr.net/npm/vue@2.7.16/dist/vue.min.js"></script>
+<!-- BootstrapVue -->
+<script src="https://unpkg.com/bootstrap-vue@2.23.1/dist/bootstrap-vue.min.js"></script>
+<!-- Axios (för HTTP-anrop) -->
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+<script>
+    new Vue({
+        el: '#app',
+        data: {
+            inputTokens: 16384,
+            outputTokens: 500,
+            apiCalls: 1500,
+            includeFreeModels: false,
+            models: [], // Rådata från API
+            isLoading: true,
+            error: null,
+            sortBy: 'totalCost', // Standard sorteringskolumn
+            sortDesc: false, // Standard sorteringsordning (false = ascending)
+            fields: [
+                { key: 'name', label: 'Name', sortable: true },
+                { key: 'id', label: 'OpenRouter ID', sortable: true },
+                { key: 'inputCost', label: 'Input Price ($)', sortable: true, class: 'text-right' },
+                { key: 'outputCost', label: 'Output Price ($)', sortable: true, class: 'text-right' },
+                { key: 'totalCost', label: 'Total Price ($)', sortable: true, class: 'text-right' }
+            ]
+        },
+        computed: {
+            calculatedModels() {
+                if (!this.models || this.models.length === 0)
+                    return [];
+
+                return this.models
+                    .map(model => {
+                        const promptPrice = parseFloat(model.pricing?.prompt) || 0;
+                        const completionPrice = parseFloat(model.pricing?.completion) || 0;
+
+                        // Calculate pricing. 1M tokens? Divide this.inputTokens by 1_000_000.
+                        const inputCost = this.apiCalls * promptPrice * (this.inputTokens || 0);
+                        const outputCost = this.apiCalls * completionPrice * (this.outputTokens || 0);
+                        const totalCost = inputCost + outputCost;
+
+                        // Create the table row object.
+                        return {
+                            id: model.id, // Unique key
+                            name: model.name || model.id,
+                            inputCost: inputCost,
+                            outputCost: outputCost,
+                            totalCost: totalCost,
+                            _promptPricePerToken: promptPrice,
+                            _completionPricePerToken: completionPrice
+                        };
+                    })
+
+                    // Filter free models, or models without price details.
+                    .filter(model => (this.includeFreeModels && model._promptPricePerToken >= 0 && model._completionPricePerToken >= 0)
+                        || (model._promptPricePerToken > 0 || model._completionPricePerToken > 0));
+            }
+        },
+        methods: {
+            async fetchModels() {
+                this.isLoading = true;
+                this.error = null;
+                try {
+                    const response = await axios.get('https://openrouter.ai/api/v1/models');
+                    // Ensure the incoming data structure is using the expected format.
+                    if (response.data && Array.isArray(response.data.data)) {
+                        this.models = response.data.data;
+                    } else {
+                        console.error("Unexpected data format from API: ", response.data);
+                        this.error = "Could not parse the OpenRouter API model list.";
+                        this.models = []; // Empty the list if wrong format.
+                    }
+                } catch (err) {
+                    console.error("Error during retrieval from OpenRouter API: ", err);
+                    this.error = `Could not retrieve the model list from the OpenRouter API: ${err.message}. Please try again later.`;
+                    this.models = []; // Empty the list if network issues etc.
+                } finally {
+                    this.isLoading = false;
+                }
+            },
+            formatCurrency(value) {
+                if (typeof value !== 'number' || isNaN(value))
+                    return 'N/A';
+                return `$${value.toFixed(3)}`;
+            }
+        },
+        mounted() {
+            // Retrieve OpenRouter model data when the component has mounted.
+            this.fetchModels();
+        }
+    });
+</script>
+
+</body>
+</html>
