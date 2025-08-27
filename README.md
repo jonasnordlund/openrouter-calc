@@ -1,4 +1,4 @@
-# openrouter-calc
+<div align="center"><img src="https://i.postimg.cc/Kv5hDh5q/Chat-GPT-Image-27-aug-2025-12-03-08.png" alt="Alt text" width="300"></div>
 
 ## What is this?
 
