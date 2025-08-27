@@ -23,7 +23,8 @@ Have fun! 🥳
 * Column (and sorting) by vendor.
 * Column (and sorting) by added date.
 * Filter table by any columns.
-* Highlight models that cannot satisfy input token count due to exceeding their context window.
+* Red background highlighting for models that cannot satisfy input token count due to exceeding their context window.
+* Configurable thresholds for "cheap" (green), "average", "expensive" (orange) and filters for those categories.
 
 ## Demo
 
