@@ -18,6 +18,13 @@ It's all in a single page suitable for static hosting and the OpenRouter API cal
 
 Have fun! 🥳
 
+## TODO
+
+* Column (and sorting) by vendor.
+* Column (and sorting) by added date.
+* Filter table by any columns.
+* Highlight models that cannot satisfy input token count due to exceeding their context window.
+
 ## Demo
 
 https://openrouter-calc.netlify.app
