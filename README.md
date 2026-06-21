@@ -20,7 +20,6 @@ Have fun! 🥳
 
 ## TODO
 
-* Column (and sorting) by added date.
 * Configurable thresholds for "cheap" (green), "average", "expensive" (orange) and filters for those categories.
 * Exclude or higlight models that cannot satisfy input token count due to exceeding their context window.
 
