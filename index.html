@@ -21,7 +21,7 @@
         height: 200px;
     }
     .openrouter-id {
-        font-family: monospace;
+templat        font-family: monospace;
         font-size: small;
     }
     </style>
@@ -97,6 +97,9 @@
              <template #cell(id)="data">
                 <span class="openrouter-id">{{ data.value }}</span>
             </template>
+            <template #cell(introducedAt)="data">
+                <span class="nowrap">{{ formatDate(data.value) }}</span>
+            </template>
              <template #cell(inputCost)="data">
                 <span class="nowrap">{{ formatCurrency(data.value) }}</span>
             </template>
@@ -135,6 +138,7 @@
             fields: [
                 { key: 'name', label: 'Name', sortable: true },
                 { key: 'id', label: 'OpenRouter ID', sortable: true },
+                { key: 'introducedAt', label: 'Added', sortable: true, class: 'nowrap' },
                 { key: 'inputCost', label: 'Input Price ($)', sortable: true, class: 'text-right' },
                 { key: 'outputCost', label: 'Output Price ($)', sortable: true, class: 'text-right' },
                 { key: 'totalCost', label: 'Total Price ($)', sortable: true, class: 'text-right' }
@@ -159,6 +163,7 @@
                         return {
                             id: model.id, // Unique key
                             name: model.name || model.id,
+                            introducedAt: model.created ? Number(model.created) : null,
                             inputCost: inputCost,
                             outputCost: outputCost,
                             totalCost: totalCost,
@@ -171,15 +176,16 @@
                     .filter(model => (this.includeFreeModels && model._promptPricePerToken >= 0 && model._completionPricePerToken >= 0)
                         || (model._promptPricePerToken > 0 || model._completionPricePerToken > 0))
                     
-                    // Filter matching free-text search (case insensitive check on both name and ID)
+                    // Filter matching free-text search (case insensitive check on both name, ID, date)
                     .filter(model => {
                         if (!this.filterText) return true;
                         
                         const searchTerm = this.filterText.toLowerCase().trim();
                         const nameMatches = model.name && model.name.toLowerCase().includes(searchTerm);
                         const idMatches = model.id && model.id.toLowerCase().includes(searchTerm);
+                        const dateMatches = model.introducedAt && model.introducedAt.includes(searchTerm);
                         
-                        return nameMatches || idMatches;
+                        return nameMatches || idMatches || dateMatches;
                     });
             }
         },
@@ -204,6 +210,14 @@
                 } finally {
                     this.isLoading = false;
                 }
+            },
+            formatDate(unixSeconds) {
+                if (!unixSeconds || typeof unixSeconds !== 'number')
+                    return 'N/A';
+                const date = new Date(unixSeconds * 1000);
+                if (isNaN(date.getTime()))
+                    return 'N/A';
+                return date.toISOString().slice(0, 10);
             },
             formatCurrency(value) {
                 if (typeof value !== 'number' || isNaN(value))
