@@ -183,7 +183,7 @@ templat        font-family: monospace;
                         const searchTerm = this.filterText.toLowerCase().trim();
                         const nameMatches = model.name && model.name.toLowerCase().includes(searchTerm);
                         const idMatches = model.id && model.id.toLowerCase().includes(searchTerm);
-                        const dateMatches = model.introducedAt && model.introducedAt.includes(searchTerm);
+                        const dateMatches = model.introducedAt && model.introducedAt.toString().includes(searchTerm);
                         
                         return nameMatches || idMatches || dateMatches;
                     });
