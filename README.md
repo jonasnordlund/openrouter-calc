@@ -10,7 +10,7 @@ For example, if you're using a 16 KB context length model with filled context (i
 
 * Input Tokens: 16384 (16×1024)
 * Output Tokens: 500
-* API Call Count: 1500 (15×30)
+* API Call Count: 1500 (50×30)
 
 You can sort the lists by price and include or exclude their completely free models.
 
@@ -20,11 +20,9 @@ Have fun! 🥳
 
 ## TODO
 
-* Column (and sorting) by vendor.
 * Column (and sorting) by added date.
-* Filter table by any columns.
-* Red background highlighting for models that cannot satisfy input token count due to exceeding their context window.
 * Configurable thresholds for "cheap" (green), "average", "expensive" (orange) and filters for those categories.
+* Exclude or higlight models that cannot satisfy input token count due to exceeding their context window.
 
 ## Demo
 
